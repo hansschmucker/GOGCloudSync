@@ -102,7 +102,7 @@
             this.buttonSaveFolder.TabIndex = 4;
             this.buttonSaveFolder.Text = "Open SaveFolder";
             this.buttonSaveFolder.UseVisualStyleBackColor = true;
-            this.buttonSaveFolder.Click += new System.EventHandler(this.onSyncToggleClick);
+            this.buttonSaveFolder.Click += new System.EventHandler(this.onRevealDir);
             // 
             // webBrowser1
             // 

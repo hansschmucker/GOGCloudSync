@@ -128,20 +128,25 @@ namespace GOGCloud
             if (Properties.Settings.Default.CloudPath == "" || !Directory.Exists(Properties.Settings.Default.CloudPath))
                 return;
 
+            bool suc = true;
             switch (syncAction)
             {
                 case "ON":
-                    ((Game)gameList.SelectedItem).enableCloud();
+                    while(suc){
+                        var resolved=userResolveConflicts((gameList.SelectedItem as Game).savePath, (gameList.SelectedItem as Game).getCloudDir());
+                        if(resolved)
+                            suc = ((Game)gameList.SelectedItem).enableCloud();
+                    }
                     updateGameView();
                     break;
                 case "OFF":
-                    ((Game)gameList.SelectedItem).disableCloud();
+                    suc=((Game)gameList.SelectedItem).disableCloud();
                     updateGameView();
                     break;
             }
         }
 
-        private void onSyncToggleClick(object sender, EventArgs e)
+        private void onRevealDir(object sender, EventArgs e)
         {
             var game=(Game)gameList.SelectedItem;
             if (game.hasDedicatedSaveFolder() && game.isCloudEnabled() && Directory.Exists(Properties.Settings.Default.CloudPath))
@@ -169,8 +174,46 @@ namespace GOGCloud
                 Properties.Settings.Default.Save();
             }
         }
-    }
 
+
+        /*
+         * Returns true if the conflict is resolved
+         */
+        private bool userResolveConflicts(string localBasePath, string cloudBasePath)
+        {
+            localBasePath = StringUtils.stripTrailingBackslash(localBasePath).ToLower() + "\\";
+            cloudBasePath = StringUtils.stripTrailingBackslash(cloudBasePath).ToLower() + "\\";
+
+            var files = FileUtils.getConflictedFiles(cloudBasePath, localBasePath);
+            
+            if (files==null ||files.Count == 0)
+                return true;
+
+            var pairs = new FilePairList()
+            {
+                files = files,
+                cloudBasePath = cloudBasePath,
+                localBasePath = localBasePath
+            };
+
+            var dialog = new FormMergeConflict();
+            dialog.setToFileList(pairs);
+            dialog.ShowDialog();
+            if (!dialog.ok)
+                return false;
+
+            for (var i = 0; i < files.Count; i++)
+            {
+                if (files[i].keepLocal)
+                    File.Delete(cloudBasePath + files[i].relPath);
+                else
+                    File.Delete(localBasePath + files[i].relPath);
+            }
+            
+            return true;
+        }
+
+    }
 
 
 }

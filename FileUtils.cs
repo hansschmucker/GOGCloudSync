@@ -35,6 +35,8 @@ namespace GOGCloud
             if (paths == null)
                 paths = new List<string>();
 
+            if (!Directory.Exists(directory))
+                Directory.CreateDirectory(directory);
             var files = Directory.GetFiles(directory);
             var dirs = Directory.GetDirectories(directory);
 
@@ -129,6 +131,43 @@ namespace GOGCloud
                     return false;
 
             return true;
+        }
+
+        /*
+          * Returns a list of conflicted files
+          */
+        public static List<RelativeFilePair> getConflictedFiles(string cloudDirectory, string localDirectory)
+        {
+            var cloudDirectoryBase = StringUtils.stripTrailingBackslash(cloudDirectory).ToLower() + "\\";
+            var localDirectoryBase = StringUtils.stripTrailingBackslash(localDirectory).ToLower() + "\\";
+
+            if (!Directory.Exists(cloudDirectory) || !Directory.Exists(localDirectory))
+                return new List<RelativeFilePair>();
+            var dir1 = FileUtils.collectRelativeFilePaths(cloudDirectory);
+            var dir2 = FileUtils.collectRelativeFilePaths(localDirectory);
+
+            if (dir1.Count == 0 || dir2.Count == 0)
+                return new List<RelativeFilePair>();
+
+            var all = StringUtils.mergeList(dir1, dir2);
+
+            var list = new List<RelativeFilePair>();
+            for (var i = 0; i < all.Count; i++)
+                if (!FileUtils.areFilesMergable(cloudDirectoryBase + all[i], localDirectoryBase + all[i]))
+                {
+                    var cloudFileInfo = new FileInfo(cloudDirectoryBase + all[i]);
+                    var localFileInfo = new FileInfo(localDirectoryBase + all[i]);
+
+                    list.Add(new RelativeFilePair() {
+                        relPath = all[i],
+                        localSize=localFileInfo.Length,
+                        cloudSize=cloudFileInfo.Length,
+                        localTime=localFileInfo.LastWriteTime,
+                        cloudTime=cloudFileInfo.LastWriteTime
+                    });
+                }
+
+            return list;
         }
 
         /**
@@ -230,5 +269,21 @@ namespace GOGCloud
 
     }
 
+    public class RelativeFilePair
+    {
+        public string relPath = "";
+        public DateTime localTime;
+        public DateTime cloudTime;
+        public long localSize;
+        public long cloudSize;
+        public bool keepLocal = false;
+    }
+
+    public class FilePairList
+    {
+        public List<RelativeFilePair> files = new List<RelativeFilePair>();
+        public string localBasePath = "";
+        public string cloudBasePath = "";
+    }
 
 }

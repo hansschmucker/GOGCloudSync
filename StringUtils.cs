@@ -29,5 +29,34 @@ namespace GOGCloud
             }
             return r;
         }
+
+        public static string formatSize(long size)
+        {
+            string unit = "B";
+            double uSize = size;
+            if (size >= 1099511627776L)
+            {
+                unit = "TB";
+                uSize = size / 1099511627776L;
+            }
+            else if (size >= 1073741824L)
+            {
+                unit = "GB";
+                uSize = size / 1073741824L;
+            }
+            else if (size >= 1048576L)
+            {
+                unit = "MB";
+                uSize = size / 1048576L;
+            }
+            else if (size >= 1024L)
+            {
+                unit = "KB";
+                uSize = size / 1024L;
+            }
+
+            var sSize = string.Format("{0:N2}",uSize);
+            return sSize + unit;
+        }
     }
 }
